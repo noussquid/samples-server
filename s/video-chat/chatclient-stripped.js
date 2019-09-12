@@ -28,8 +28,27 @@ function connect() {
 
     connection.onmessage = function(evt) {
         console.log("message received");
+        console.dir(evt.data);
+
         var text = "";
         var msg = JSON.parse(evt.data);
+
+        var time = new Date(msg.date);
+        var timeStr = time.toLocaleTimeString();
+
+        switch(msg.type) {
+            case "id":
+                clientID = msg.id;
+                setUsername();
+                break;
+            case "rejectusername":
+                console.log("new username: " + msg.name);
+                myUsername = msg.name;
+                break;
+            default:
+                console.log("Unknown message received: ");
+                console.log(msg);
+        }
     }
 }
 
@@ -43,3 +62,13 @@ function sendToServer(msg) {
     connection.send(msgJSON);
 }
 
+function setUsername() {
+    myUsername = document.getElementById("name").value;
+
+    sendToServer({
+        name: myUsername,
+        date: Date.now(), 
+        id: clientID,
+        type: "username"
+    });
+}
