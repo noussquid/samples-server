@@ -18,6 +18,7 @@
 <html>
 <head>
   <title>video chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
   <meta charset="utf-8">
   <link href="chat.css" rel="stylesheet">
   <link href="../shared.css" rel="stylesheet">
@@ -26,10 +27,6 @@
   <script src="fabric.js"></script>
 </head>
 <body>
-  <p>Enter a username: <input id="name" type="text" maxlength="12" required
-      autocomplete="username" inputmode="verbatim" placeholder="Username">
-  <input type="button" name="login" value="Log in" onclick="connect()"></p>
-
   <div id="container" class="flexChild columnParent">
    <div class="flexChild rowParent" >
    <canvas id="world-canvas" width="2000px" height="2000px"></canvas>

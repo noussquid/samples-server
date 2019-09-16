@@ -8,44 +8,124 @@ var friendUsername = null;
 
 var canvas; // fabricjs canvas instance 
 var allUsersGroup; // a fabricjs grouping of all users 
+var users = [];
 
 // WebSocket chat/signaling channel variables
 var connection = null;
 var clientID = 0;
+var greetingText;
 
 let stateCheck = setInterval(() => {
     if (document.readyState === 'complete') {
-        clearInterval(stateCheck); 
-        //canvas = new fabric.Canvas('world-canvas');
-        //canvas.renderAll();
+        clearInterval(stateCheck);
+        canvas = new fabric.Canvas('world-canvas');
+
+        allUsersGroup = new fabric.Group([], {
+            left: 50,
+            top: 50,
+            subTargetCheck: true,
+            hasControls: false
+        });
+
+        greetingText = new fabric.Textbox('tap to enter a username', {
+            left: document.documentElement.clientWidth / 2 - 100,
+            top: 100,
+            width: 150,
+            editable: true,
+            hasControls: false,
+            textAlign: 'center'
+        });
+
+        greetingText.on('mousedown', function(evt) {
+            console.log('mouseDown greetingText');
+            evt.target.text = '';
+            evt.target.enterEditing();
+        });
+
+
+        greetingText.on('modified', function(evt) {
+            console.log('greetingText modified');
+            connect();
+        });
+
+
+        canvas.on('mouse:up', function(options) {
+            if (options.target) {
+                console.log('an object was clicked! ', options.target.type);
+            }
+        });
+
+        canvas.on('object:selected', function(options) {
+            console.log('object:selected', options);
+        });
+
+        canvas.add(greetingText);
+        canvas.add(allUsersGroup);
     }
-}, 100); 
+}, 100);
+
+function animate(e, dir) {
+    if (e.target) {
+        fabric.util.animate({
+            startValue: e.subTargets[0].get('scaleX'),
+            endValue: e.subTargets[0].get('scaleX') + (dir ? -0.2 : 0.2),
+            duration: 10,
+            onChange: function(value) {
+                console.log(value);
+                e.subTargets[0].scale(value);
+                canvas.renderAll();
+            },
+            onComplete: function() {
+                console.log('onComplete');
+                e.target.setCoords();
+                e.subTargets[0].scale(1);
+            }
+        });
+    }
+}
 // Given a message containing a list of usernames, this function
 // populates the user list box with those names, making each item
 // clickable to allow starting a video call. 
 function handleUserlistMsg(msg, ctx) {
-    console.log(allUsersGroup);
 
-
-    allUsersGroup.forEachObject(function(obj) { 
-        allUsersGroup.removeWithUpdate(obj); 
+    // removes all users before updating list
+    // destroying the group would drop all group objects
+    // back on canvas so we remove them all one by one
+    allUsersGroup.forEachObject(function(obj) {
+        allUsersGroup.removeWithUpdate(obj);
         canvas.remove(obj);
     });
 
     // Add member names from the received list
     for (let i = 0; i < msg.users.length; i++) {
-	let userName = new fabric.Text(msg.users[i], {
-            left: allUsersGroup.get('left') + allUsersGroup.getBoundingRect().width + 10, 
-            fontSize: 24,
+        let userName = new fabric.Text(msg.users[i], {
+            left: allUsersGroup.get('left') + allUsersGroup.getBoundingRect().width + 10,
+            fontSize: 24
         });
 
-	console.dir(userName);
+        userName.on('mouseup', function(evt) {
+            console.log('userName mouseup', evt);
+        });
+
+        userName.on('mousedown', function(evt) {
+            console.log('userName mousedown', evt);
+            animate(evt, 1);
+        });
+
+        userName.on('mouseover', function(evt) {});
+
+        userName.on('mouseout', function(evt) {
+        });
+
+        userName.on('selected', function(evt) {
+            console.log('userName selected', evt);
+        });
 
         allUsersGroup.addWithUpdate(userName);
     }
 
     fabric.util.requestAnimFrame(function render() {
-        canvas.renderAll();
+        canvas.requestRenderAll();
         fabric.util.requestAnimFrame(render);
     });
 
@@ -58,14 +138,6 @@ function connect() {
 
     serverURL = "wss://" + myHostname + "/draw/";
     connection = new WebSocket(serverURL, "json");
-
-    canvas = new fabric.Canvas('world-canvas');
-    allUsersGroup = new fabric.Group([], {
-        left: 50,
-        top: 50
-    });
-
-    canvas.add(allUsersGroup);
 
     connection.onopen = function(evt) {
         console.log("connection is open");
@@ -133,7 +205,9 @@ function sendToServer(msg) {
 }
 
 function setUsername() {
-    myUsername = document.getElementById("name").value;
+    //myUsername = document.getElementById("name").value;
+    myUsername = greetingText.text;
+    greetingText.visible = false;
 
     sendToServer({
         name: myUsername,
